@@ -101,9 +101,15 @@ function Doctors() {
                                     View Profile
                                 </Link>
 
-                                <button className="book-btn">
+                                <Link
+                                    to={`/appointments/${doctor.name
+                                        .toLowerCase()
+                                        .replace("dr. ", "")
+                                        .replaceAll(" ", "-")}`}
+                                    className="book-btn"
+                                >
                                     Book Appointment
-                                </button>
+                                </Link>
                             </div>
 
                         </div>

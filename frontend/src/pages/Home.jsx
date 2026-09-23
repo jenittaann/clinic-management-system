@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom"
+
 function Home() {
     return (
         <div className="app">
@@ -11,7 +13,7 @@ function Home() {
                     <a href="#about">About</a>
                 </div>
 
-                <button className="login-btn">Login</button>
+                <Link to="/login" className="login-btn">Login</Link>
             </nav>
 
             <main id="home" className="hero-section">
@@ -30,8 +32,8 @@ function Home() {
                     </p>
 
                     <div className="hero-buttons">
-                        <button className="primary-btn">Find a Doctor</button>
-                        <button className="secondary-btn">Book Appointment</button>
+                        <Link to="/doctors" className="primary-btn">Find a Doctor</Link>
+                        <Link to="/book-appointment" className="secondary-btn">Book Appointment</Link>
                     </div>
                 </div>
 
