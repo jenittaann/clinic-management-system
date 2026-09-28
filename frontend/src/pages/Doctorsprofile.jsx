@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom"
+import BackButton from "../components/BackButton"
 
 function DoctorProfile() {
     const { name } = useParams()
@@ -43,6 +44,7 @@ function DoctorProfile() {
 
     return (
         <div className="doctor-profile">
+            <BackButton />
 
             <div className="profile-header">
 

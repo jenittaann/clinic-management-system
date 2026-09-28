@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import BackButton from "../components/BackButton"
 
 function Login() {
     const navigate = useNavigate()
@@ -45,6 +46,7 @@ function Login() {
 
     return (
         <div className="login-page">
+            <BackButton className="back-button-login" />
 
             <div className="login-box">
 

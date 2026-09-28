@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import BackButton from "../components/BackButton"
 
 function Doctors() {
     const doctors = [
@@ -40,6 +41,7 @@ function Doctors() {
 
     return (
         <div className="doctors-page">
+            <BackButton />
 
             <div className="doctors-header">
                 <h1>Find a Doctor</h1>

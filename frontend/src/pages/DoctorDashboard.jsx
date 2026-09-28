@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import BackButton from "../components/BackButton"
 
 const initialAppointments = [
     { id: 1, patient: "Maya Thomas", time: "09:30 AM", type: "Follow-up", status: "Confirmed" },
@@ -50,7 +51,7 @@ function DoctorDashboard() {
         <main className="role-dashboard">
             <div className="dashboard-shell dashboard-shell-wide">
                 <div className="dashboard-kicker">CAMILLUS CLINIC TEAM</div>
-                <div className="dashboard-title-row"><div><h1>Doctor Dashboard</h1><p className="dashboard-intro">Manage your clinic schedule and patient care from one place.</p></div><Link to="/" className="dashboard-home-link">Home</Link></div>
+                <div className="dashboard-title-row"><div><h1>Doctor Dashboard</h1><p className="dashboard-intro">Manage your clinic schedule and patient care from one place.</p></div><div className="dashboard-header-links"><BackButton className="back-button-inline" /><Link to="/" className="dashboard-home-link">Home</Link><Link to="/settings" state={{ from: "/doctor-dashboard" }} className="dashboard-home-link">Settings</Link></div></div>
 
                 <div className="dashboard-grid">
                     <section className="dashboard-panel">

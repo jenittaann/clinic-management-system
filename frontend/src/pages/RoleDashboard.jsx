@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom"
+import BackButton from "../components/BackButton"
 
 function RoleDashboard({ role }) {
     return (
         <main className="role-dashboard">
             <div className="dashboard-shell">
+                <BackButton />
                 <div className="dashboard-kicker">CAMILLUS CLINIC MANAGEMENT</div>
                 <h1>{role} Dashboard</h1>
                 <p className="dashboard-intro">
-                    Your mock workspace is ready. Connect the Spring Boot services here when the backend is available.
+                    Your clinic workspace is ready. Review your access level and current system status.
                 </p>
 
                 <div className="dashboard-summary">
@@ -17,7 +19,7 @@ function RoleDashboard({ role }) {
                     </div>
                     <div className="summary-card">
                         <span className="summary-label">System status</span>
-                        <strong className="status-ready">Frontend ready</strong>
+                        <strong className="status-ready">Ready</strong>
                     </div>
                 </div>
 

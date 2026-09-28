@@ -8,9 +8,18 @@ import PatientDashboard from './pages/PatientDashboard'
 import DoctorDashboard from './pages/DoctorDashboard'
 import ReceptionistDashboard from './pages/ReceptionistDashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import Settings from './pages/Settings'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
+  const [theme, setTheme] = useState(() => window.localStorage.getItem('camillus-theme') || 'light')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    window.localStorage.setItem('camillus-theme', theme)
+  }, [theme])
+
   return (
     <BrowserRouter>
       <Routes>
@@ -25,6 +34,7 @@ function App() {
         <Route path="/receptionist-dashboard" element={<ReceptionistDashboard />} />
         <Route path="/reception-dashboard" element={<ReceptionistDashboard />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/settings" element={<Settings theme={theme} onThemeChange={setTheme} />} />
       </Routes>
     </BrowserRouter>
   )

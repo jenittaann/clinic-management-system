@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom"
 import { useState } from "react"
+import BackButton from "../components/BackButton"
 
 function BookAppointment() {
     const { name } = useParams()
@@ -24,6 +25,7 @@ function BookAppointment() {
 
     return (
         <div className="appointment-page">
+            <BackButton className="back-button-booking" />
 
             <h1>Book an Appointment</h1>
 
