@@ -9,6 +9,8 @@ import DoctorDashboard from './pages/DoctorDashboard'
 import ReceptionistDashboard from './pages/ReceptionistDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import Settings from './pages/Settings'
+import Hospitals from './pages/Hospitals'
+import HospitalDetails from './pages/HospitalDetails'
 import { useEffect, useState } from 'react'
 import './App.css'
 
@@ -29,6 +31,8 @@ function App() {
         <Route path="/appointments/:name" element={<BookAppointment />} />
         <Route path="/doctors" element={<Doctors />} />
         <Route path="/doctors/:name" element={<DoctorProfile />} />
+        <Route path="/hospitals" element={<Hospitals />} />
+        <Route path="/hospitals/:hospitalId" element={<HospitalDetails />} />
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
         <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         <Route path="/receptionist-dashboard" element={<ReceptionistDashboard />} />

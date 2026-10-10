@@ -1,9 +1,11 @@
-import { useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
 import { useState } from "react"
 import BackButton from "../components/BackButton"
 
 function BookAppointment() {
     const { name } = useParams()
+    const location = useLocation()
+    const bookingDetails = location.state?.bookingDetails
 
     const doctorNames = {
         "ananya-sharma": "Dr. Ananya Sharma",
@@ -11,10 +13,14 @@ function BookAppointment() {
         "priya-nair": "Dr. Priya Nair",
     }
 
-    const doctorName = doctorNames[name] || "Doctor"
+    const doctorName = bookingDetails?.doctor || doctorNames[name] || "Doctor"
+    const appointmentTimes = ["10:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"]
+    if (bookingDetails?.time && !appointmentTimes.includes(bookingDetails.time)) {
+        appointmentTimes.unshift(bookingDetails.time)
+    }
 
-    const [date, setDate] = useState("")
-    const [time, setTime] = useState("")
+    const [date, setDate] = useState(bookingDetails?.date || "")
+    const [time, setTime] = useState(bookingDetails?.time || "")
     const [reason, setReason] = useState("")
     const [booked, setBooked] = useState(false)
 
@@ -33,6 +39,14 @@ function BookAppointment() {
                 Booking appointment with <strong>{doctorName}</strong>
             </p>
 
+            {bookingDetails && (
+                <div className="booking-context">
+                    <p><strong>Hospital:</strong> {bookingDetails.hospital}</p>
+                    <p><strong>Department:</strong> {bookingDetails.department}</p>
+                    <p><strong>Appointment time:</strong> {bookingDetails.day}, {bookingDetails.time}</p>
+                </div>
+            )}
+
             {booked ? (
                 <div className="booking-success">
                     <h2>Appointment Confirmed! ✓</h2>
@@ -40,6 +54,11 @@ function BookAppointment() {
                         Your appointment with {doctorName} has been
                         successfully booked.
                     </p>
+                    {bookingDetails && (
+                        <p>
+                            {bookingDetails.hospital} · {bookingDetails.department} · {bookingDetails.day}, {bookingDetails.time}
+                        </p>
+                    )}
                 </div>
             ) : (
                 <form onSubmit={handleSubmit} className="appointment-form">
@@ -65,10 +84,9 @@ function BookAppointment() {
                         required
                     >
                         <option value="">Choose a time</option>
-                        <option>10:00 AM</option>
-                        <option>11:30 AM</option>
-                        <option>2:00 PM</option>
-                        <option>4:30 PM</option>
+                        {appointmentTimes.map((appointmentTime) => (
+                            <option key={appointmentTime}>{appointmentTime}</option>
+                        ))}
                     </select>
 
                     <label>

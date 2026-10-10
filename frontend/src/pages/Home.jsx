@@ -34,6 +34,7 @@ function Home() {
                     <div className="hero-buttons">
                         <Link to="/doctors" className="primary-btn">Find a Doctor</Link>
                         <Link to="/book-appointment" className="secondary-btn">Book Appointment</Link>
+                        <Link to="/hospitals" className="secondary-btn">Find a Hospital</Link>
                     </div>
                 </div>
 
