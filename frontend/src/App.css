@@ -1388,6 +1388,32 @@ html[data-theme="dark"] .settings-logout-button {
     font-size: 14px;
 }
 
+.login-hospital-context {
+    display: grid;
+    gap: 4px;
+    margin: 0 0 22px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--blue-pale);
+}
+
+.login-hospital-context span {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.login-hospital-context strong {
+    color: var(--ink);
+}
+
+.login-hospital-context a {
+    margin-top: 6px;
+    color: var(--blue-dark);
+    font-size: 13px;
+    font-weight: 700;
+}
+
 .login-box form {
     gap: 8px;
 }

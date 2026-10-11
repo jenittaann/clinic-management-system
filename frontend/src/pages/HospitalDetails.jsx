@@ -1,16 +1,88 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
-import { availabilitySlots, departments, doctors, getNextAppointmentDate, hospitals } from "../data/hospitals"
+import { fetchHospitals } from "../api/hospitals"
+import { availabilitySlots, departments, doctors, getNextAppointmentDate, hospitals as fixtureHospitals } from "../data/hospitals"
+import { saveSelectedHospital } from "../utils/selectedHospital"
 import "./Hospitals.css"
 
 function HospitalDetails() {
     const { hospitalId } = useParams()
     const navigate = useNavigate()
-    const hospital = hospitals.find((item) => item.id === hospitalId)
+    const legacyHospital = fixtureHospitals.find((item) => item.id === hospitalId)
+    const [apiHospitals, setApiHospitals] = useState([])
+    const [requestState, setRequestState] = useState({ route: null, status: "loading", error: "" })
+    const [reloadKey, setReloadKey] = useState(0)
     const [selectedDepartmentId, setSelectedDepartmentId] = useState("")
     const [selectedDoctorId, setSelectedDoctorId] = useState("")
     const [selectedSlotId, setSelectedSlotId] = useState("")
+
+    useEffect(() => {
+        if (legacyHospital) {
+            return undefined
+        }
+
+        let isCurrent = true
+        fetchHospitals()
+            .then((records) => {
+                if (isCurrent) {
+                    setApiHospitals(records)
+                    setRequestState({ route: hospitalId, status: "success", error: "" })
+                }
+            })
+            .catch((requestError) => {
+                if (isCurrent) {
+                    setRequestState({
+                        route: hospitalId,
+                        status: "error",
+                        error: requestError.message || "Unable to load hospital details.",
+                    })
+                }
+            })
+
+        return () => {
+            isCurrent = false
+        }
+    }, [hospitalId, legacyHospital, reloadKey])
+
+    const isLoading = !legacyHospital && (
+        requestState.route !== hospitalId || requestState.status === "loading"
+    )
+    const error = requestState.route === hospitalId && requestState.status === "error"
+        ? requestState.error
+        : ""
+    const hospital = legacyHospital || apiHospitals.find((item) => String(item.id) === hospitalId)
+    const demoHospital = legacyHospital || fixtureHospitals.find((item) =>
+        item.name.trim().toLocaleLowerCase("en-IN") === hospital?.name?.trim().toLocaleLowerCase("en-IN"),
+    )
+    const hasDemoDetails = Boolean(demoHospital)
+
+    if (!hospital && isLoading) {
+        return (
+            <main className="hospitals-page">
+                <BackButton />
+                <p className="hospital-results-count" role="status">Loading hospital details…</p>
+            </main>
+        )
+    }
+
+    if (!hospital && error) {
+        return (
+            <main className="hospitals-page">
+                <BackButton />
+                <section className="hospital-not-found" role="alert">
+                    <h1>Hospital details could not be loaded</h1>
+                    <p>{error}</p>
+                    <button type="button" className="hospital-view-button" onClick={() => {
+                        setRequestState({ route: hospitalId, status: "loading", error: "" })
+                        setReloadKey((key) => key + 1)
+                    }}>
+                        Try again
+                    </button>
+                </section>
+            </main>
+        )
+    }
 
     if (!hospital) {
         return (
@@ -27,7 +99,9 @@ function HospitalDetails() {
         )
     }
 
-    const hospitalDepartments = departments.filter((department) => department.hospitalId === hospital.id)
+    const hospitalDepartments = hasDemoDetails
+        ? departments.filter((department) => department.hospitalId === demoHospital.id)
+        : []
     const selectedDepartment = hospitalDepartments.find((department) => department.id === selectedDepartmentId)
     const departmentDoctors = doctors.filter((doctor) => doctor.departmentId === selectedDepartmentId)
     const selectedDoctor = departmentDoctors.find((doctor) => doctor.id === selectedDoctorId)
@@ -62,24 +136,59 @@ function HospitalDetails() {
         })
     }
 
+    function selectCurrentHospital() {
+        const selected = saveSelectedHospital(hospital)
+        if (selected) navigate(`/login?hospitalId=${encodeURIComponent(selected.id)}`)
+    }
+
+    const isApiHospital = !legacyHospital && apiHospitals.some((item) => String(item.id) === hospitalId)
+
     return (
         <main className="hospitals-page hospital-detail-page">
             <BackButton />
 
+            {hasDemoDetails && (
+                <p className="hospital-demo-notice" role="note">
+                    Demo departments, doctors, and appointment slots for this legacy fixture; these details are not loaded from the hospital API.
+                </p>
+            )}
+
             <header className="hospital-detail-hero">
                 <div className="hospital-detail-icon" aria-hidden="true">✚</div>
                 <div>
-                    <span className="hospital-type">{hospital.type}</span>
-                    <h1>{hospital.name}</h1>
-                    <p className="hospital-area"><span aria-hidden="true">⌖</span> {hospital.address}</p>
-                    <p className="hospital-detail-description">{hospital.description}</p>
+                    <span className="hospital-type">{hospital.type || "Type not listed"}</span>
+                    <h1>{hospital.name || "Unnamed hospital"}</h1>
+                    <p className="hospital-area"><span aria-hidden="true">⌖</span> {hospital.address || "Address not listed"}</p>
+                    <p className="hospital-detail-description">{hospital.description || "Description not available."}</p>
+                    {isApiHospital && (
+                        <button type="button" className="hospital-select-button hospital-detail-select" onClick={selectCurrentHospital}>
+                            Select Hospital
+                        </button>
+                    )}
                 </div>
                 <div className="hospital-beds-summary">
-                    <strong>{hospital.beds.toLocaleString("en-IN")}</strong>
+                    <strong>{Number.isInteger(hospital.beds) ? hospital.beds.toLocaleString("en-IN") : "Not listed"}</strong>
                     <span>Hospital beds</span>
                 </div>
             </header>
 
+            {!hasDemoDetails ? (
+                <section className="hospital-departments-section">
+                    <div className="hospital-section-heading">
+                        <div>
+                            <p className="hospitals-eyebrow">SPECIALIST CARE</p>
+                            <h2>Departments</h2>
+                        </div>
+                        <span>{Array.isArray(hospital.departmentIds) && hospital.departmentIds.length > 0
+                            ? `${hospital.departmentIds.length} department IDs`
+                            : "Not listed"}</span>
+                    </div>
+                    <p className="hospital-empty-state">
+                        Department names, doctors, and appointment availability are not provided by the current hospital API.
+                    </p>
+                </section>
+            ) : (
+            <>
             <section className="hospital-departments-section">
                 <div className="hospital-section-heading">
                     <div>
@@ -167,6 +276,8 @@ function HospitalDetails() {
                         ))}
                     </div>
                 </section>
+            )}
+            </>
             )}
         </main>
     )
