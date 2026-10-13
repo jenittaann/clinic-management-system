@@ -9,6 +9,7 @@ import DoctorDashboard from './pages/DoctorDashboard'
 import ReceptionistDashboard from './pages/ReceptionistDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import Settings from './pages/Settings'
+import AuthenticatedRoute from './components/AuthenticatedRoute'
 import Hospitals from './pages/Hospitals'
 import HospitalDetails from './pages/HospitalDetails'
 import { useEffect, useState } from 'react'
@@ -33,15 +34,15 @@ function App() {
         <Route path="/doctors/:name" element={<DoctorProfile />} />
         <Route path="/hospitals" element={<Hospitals />} />
         <Route path="/hospitals/:hospitalId" element={<HospitalDetails />} />
-        <Route path="/patient-dashboard" element={<PatientDashboard />} />
-        <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-        <Route path="/receptionist-dashboard" element={<ReceptionistDashboard />} />
-        <Route path="/reception-dashboard" element={<ReceptionistDashboard />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/settings" element={<Settings theme={theme} onThemeChange={setTheme} />} />
+        <Route path="/patient-dashboard" element={<AuthenticatedRoute role="PATIENT"><PatientDashboard /></AuthenticatedRoute>} />
+        <Route path="/doctor-dashboard" element={<AuthenticatedRoute role="DOCTOR"><DoctorDashboard /></AuthenticatedRoute>} />
+        <Route path="/receptionist-dashboard" element={<AuthenticatedRoute role="RECEPTIONIST"><ReceptionistDashboard /></AuthenticatedRoute>} />
+        <Route path="/reception-dashboard" element={<AuthenticatedRoute role="RECEPTIONIST"><ReceptionistDashboard /></AuthenticatedRoute>} />
+        <Route path="/admin-dashboard" element={<AuthenticatedRoute role="ADMIN"><AdminDashboard /></AuthenticatedRoute>} />
+        <Route path="/settings" element={<AuthenticatedRoute><Settings theme={theme} onThemeChange={setTheme} /></AuthenticatedRoute>} />
       </Routes>
     </BrowserRouter>
   )
 }
 
-export default App 
+export default App

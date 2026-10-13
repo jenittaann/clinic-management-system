@@ -1,0 +1,14 @@
+spring:
+  config:
+    activate:
+      on-profile: staging
+  datasource:
+    url: ${STAGING_DB_URL}
+    username: ${STAGING_DB_USERNAME}
+    password: ${STAGING_DB_PASSWORD}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true

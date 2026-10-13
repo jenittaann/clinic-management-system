@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import BackButton from "../components/BackButton"
+import { logout as endSession } from "../api/auth"
 
 const initialNotifications = {
     appointments: true,
@@ -74,8 +75,13 @@ function Settings({ theme, onThemeChange }) {
         setPasswordForm({ current: "", next: "", confirm: "" })
     }
 
-    function logout() {
-        navigate("/login")
+    async function logout() {
+        try {
+            await endSession()
+            navigate("/login", { replace: true })
+        } catch (error) {
+            setProfileMessage(error.message || "Unable to sign out. Please try again.")
+        }
     }
 
     return (

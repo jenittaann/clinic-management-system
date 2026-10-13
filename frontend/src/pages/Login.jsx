@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
 import { fetchHospitals } from "../api/hospitals"
+import { login } from "../api/auth"
 import { clearSelectedHospital, getSelectedHospital, saveSelectedHospital } from "../utils/selectedHospital"
 
 function Login() {
     const navigate = useNavigate()
+    const location = useLocation()
     const [searchParams] = useSearchParams()
     const requestedHospitalId = searchParams.get("hospitalId")
     const initialHospitalId = requestedHospitalId || getSelectedHospital()?.id
@@ -13,7 +15,8 @@ function Login() {
     const [role, setRole] = useState("Patient")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const [error, setError] = useState("")
+    const [error, setError] = useState(location.state?.authError || "")
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [hospitalState, setHospitalState] = useState(() => initialHospitalId
         ? { status: "loading", hospital: null, error: "" }
         : { status: "missing", hospital: null, error: "Select a hospital before choosing a login role." })
@@ -55,7 +58,7 @@ function Login() {
         }
     }, [requestedHospitalId, reloadKey])
 
-    function handleLogin(event) {
+    async function handleLogin(event) {
         event.preventDefault()
 
         if (hospitalState.status !== "success" || !hospitalState.hospital?.id) {
@@ -64,8 +67,6 @@ function Login() {
         }
 
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
-
         if (!email.trim() || !password.trim()) {
             setError("Please enter your email and password.")
             return
@@ -76,20 +77,25 @@ function Login() {
             return
         }
 
-        if (!passwordPattern.test(password)) {
-            setError("Password must be at least 8 characters and include a letter and a number.")
-            return
-        }
-
         setError("")
+        setIsSubmitting(true)
         const hospitalQuery = `?hospitalId=${encodeURIComponent(hospitalState.hospital.id)}`
         const dashboardByRole = {
-            Patient: "/patient-dashboard",
-            Doctor: "/doctor-dashboard",
-            Receptionist: "/receptionist-dashboard",
-            Admin: "/admin-dashboard",
+            PATIENT: "/patient-dashboard",
+            DOCTOR: "/doctor-dashboard",
+            RECEPTIONIST: "/receptionist-dashboard",
+            ADMIN: "/admin-dashboard",
         }
-        navigate(`${dashboardByRole[role]}${hospitalQuery}`)
+        try {
+            const identity = await login(email.trim(), password)
+            const dashboard = dashboardByRole[identity?.role]
+            if (!dashboard) throw new Error("Your account has an unsupported role. Contact your clinic administrator.")
+            navigate(`${dashboard}${hospitalQuery}`, { replace: true })
+        } catch (requestError) {
+            setError(requestError.message || "Unable to sign in. Please try again.")
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     if (hospitalState.status !== "success") {
@@ -185,10 +191,11 @@ function Login() {
 
                     {error && <p className="login-error" role="alert">{error}</p>}
 
-                    <button type="submit" className="login-submit">Login to Camillus</button>
+                    <button type="submit" className="login-submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Signing in…" : "Login to Camillus"}
+                    </button>
                 </form>
-
-                <p className="login-note">Demo login: fields are checked locally; backend authentication is not connected yet.</p>
+                {isSubmitting && <p role="status">Verifying your account…</p>}
             </div>
         </div>
     )
