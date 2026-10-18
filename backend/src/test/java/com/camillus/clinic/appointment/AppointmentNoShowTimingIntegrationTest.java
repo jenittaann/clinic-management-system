@@ -181,12 +181,7 @@ class AppointmentNoShowTimingIntegrationTest {
     }
 
     private MockHttpSession login(UserAccount account) throws Exception {
-        Csrf csrf = csrf(null);
-        MvcResult result = mvc.perform(post("/api/auth/login").cookie(csrf.cookie())
-                        .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + account.getEmail() + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk()).andReturn();
-        return (MockHttpSession) result.getRequest().getSession(false);
+        return com.camillus.clinic.TestSessions.forAccount(account);
     }
 
     private Csrf csrf(MockHttpSession session) throws Exception {

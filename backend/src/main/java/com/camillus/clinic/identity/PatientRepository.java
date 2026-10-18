@@ -50,4 +50,10 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             "where lower(assignment.receptionist.publicId) = lower(:receptionistPublicId)))")
     Optional<Patient> findVisibleToReceptionist(@Param("patientPublicId") String patientPublicId,
                                                  @Param("receptionistPublicId") String receptionistPublicId);
+
+    @EntityGraph(attributePaths = "user")
+    @Query("select distinct p from Patient p join p.user u where exists (" +
+            "select a.id from Appointment a where a.patient = p " +
+            "and lower(a.doctor.publicId) = lower(:doctorPublicId)) order by u.email")
+    java.util.List<Patient> findAllForDoctor(@Param("doctorPublicId") String doctorPublicId, Pageable pageable);
 }

@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
-import Login from './pages/Login'
+import RoleSelection from './pages/RoleSelection'
+import HospitalSelection from './pages/HospitalSelection'
 import Doctors from './pages/Doctors'
 import DoctorProfile from './pages/Doctorsprofile'
 import BookAppointment from './pages/BookAppointment'
@@ -15,6 +16,11 @@ import HospitalDetails from './pages/HospitalDetails'
 import { useEffect, useState } from 'react'
 import './App.css'
 
+function LegacyLoginRedirect() {
+  const location = useLocation()
+  return <Navigate to={`/role-selection${location.search}`} replace />
+}
+
 function App() {
   const [theme, setTheme] = useState(() => window.localStorage.getItem('camillus-theme') || 'light')
 
@@ -27,18 +33,21 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/role-selection" element={<RoleSelection />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/login" element={<LegacyLoginRedirect />} />
+        <Route path="/select-hospital" element={<HospitalSelection />} />
         <Route path="/book-appointment" element={<BookAppointment />} />
         <Route path="/appointments/:name" element={<BookAppointment />} />
         <Route path="/doctors" element={<Doctors />} />
         <Route path="/doctors/:name" element={<DoctorProfile />} />
         <Route path="/hospitals" element={<Hospitals />} />
         <Route path="/hospitals/:hospitalId" element={<HospitalDetails />} />
-        <Route path="/patient-dashboard" element={<AuthenticatedRoute role="PATIENT"><PatientDashboard /></AuthenticatedRoute>} />
-        <Route path="/doctor-dashboard" element={<AuthenticatedRoute role="DOCTOR"><DoctorDashboard /></AuthenticatedRoute>} />
-        <Route path="/receptionist-dashboard" element={<AuthenticatedRoute role="RECEPTIONIST"><ReceptionistDashboard /></AuthenticatedRoute>} />
-        <Route path="/reception-dashboard" element={<AuthenticatedRoute role="RECEPTIONIST"><ReceptionistDashboard /></AuthenticatedRoute>} />
-        <Route path="/admin-dashboard" element={<AuthenticatedRoute role="ADMIN"><AdminDashboard /></AuthenticatedRoute>} />
+        <Route path="/patient-dashboard" element={<PatientDashboard />} />
+        <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+        <Route path="/receptionist-dashboard" element={<ReceptionistDashboard />} />
+        <Route path="/reception-dashboard" element={<ReceptionistDashboard />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/settings" element={<AuthenticatedRoute><Settings theme={theme} onThemeChange={setTheme} /></AuthenticatedRoute>} />
       </Routes>
     </BrowserRouter>

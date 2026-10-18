@@ -77,9 +77,11 @@ public class SecurityConfiguration {
                                 writeError(response, objectMapper, HttpServletResponse.SC_FORBIDDEN, "Access denied")))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/email-sign-in",
+                                "/api/auth/patient-register", "/api/auth/receptionist-register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/passwordless/request", "/api/auth/passwordless/verify").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hospitals", "/api/hospitals/*/departments",
-                                "/api/doctors", "/api/hospitals/*/doctors").permitAll()
+                                "/api/doctors", "/api/hospitals/*/doctors", "/api/doctors/*/availability").permitAll()
                         .requestMatchers("/api", "/api/**").authenticated()
                         .anyRequest().permitAll())
                 .logout(logout -> logout.disable());

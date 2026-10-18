@@ -85,7 +85,7 @@ public class AppointmentService {
                 interval.startsAt(), interval.endsAt(), null).isEmpty())
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient already has an overlapping appointment");
 
-        Appointment saved = appointments.saveAndFlush(new Appointment(patient, doctor, interval.startsAt(), interval.endsAt(), Appointment.Status.CONFIRMED));
+        Appointment saved = appointments.saveAndFlush(new Appointment(patient, doctor, interval.startsAt(), interval.endsAt(), Appointment.Status.CONFIRMED, request.reason()));
         return AppointmentResponse.from(saved);
     }
 
@@ -188,6 +188,19 @@ public class AppointmentService {
         return appointments.findAllByDoctor_PublicIdIgnoreCaseAndServiceDateAndStatusInOrderByQueuePositionAsc(
                         publicId.toString(), serviceDate, QUEUE_STATUSES)
                 .stream().map(QueueItemResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AppointmentResponse> getDoctorAppointments(String doctorId, LocalDate serviceDate, AuthenticatedUser currentUser) {
+        UUID publicId = parseUuid(doctorId, "doctorId");
+        var doctor = doctors.findByPublicIdIgnoreCase(publicId.toString())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor not found"));
+        authorizeQueueAccess(doctor, currentUser);
+        Instant dayStart = serviceDate.atStartOfDay(CLINIC_ZONE).toInstant();
+        Instant dayEnd = serviceDate.plusDays(1).atStartOfDay(CLINIC_ZONE).toInstant();
+        return appointments.findAllByDoctor_PublicIdIgnoreCaseAndStartsAtGreaterThanEqualAndStartsAtLessThanOrderByStartsAtAsc(
+                        publicId.toString(), dayStart, dayEnd)
+                .stream().map(AppointmentResponse::from).toList();
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)

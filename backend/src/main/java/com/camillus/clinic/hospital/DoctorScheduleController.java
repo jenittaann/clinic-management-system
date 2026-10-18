@@ -10,38 +10,43 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.UUID;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/doctors/{doctorId}")
-@PreAuthorize("hasAnyRole('DOCTOR', 'RECEPTIONIST', 'ADMIN')")
 public class DoctorScheduleController {
     private final DoctorScheduleService schedules;
 
     public DoctorScheduleController(DoctorScheduleService schedules) { this.schedules = schedules; }
 
     @GetMapping("/availability")
-    public DoctorScheduleResponse get(@PathVariable String doctorId, @AuthenticationPrincipal AuthenticatedUser user) {
-        return schedules.get(uuid(doctorId, "doctorId"), user);
+    public DoctorScheduleResponse get(@PathVariable String doctorId,
+                                      @RequestParam(required = false) LocalDate date) {
+        return schedules.getPublic(uuid(doctorId, "doctorId"), date);
     }
 
+    @PreAuthorize("hasAnyRole('DOCTOR', 'RECEPTIONIST', 'ADMIN')")
     @PutMapping("/appointment-duration")
     public DoctorScheduleResponse setDuration(@PathVariable String doctorId,
             @Valid @RequestBody AppointmentDurationRequest request, @AuthenticationPrincipal AuthenticatedUser user) {
         return schedules.setDuration(uuid(doctorId, "doctorId"), request.durationMinutes(), user);
     }
 
+    @PreAuthorize("hasAnyRole('DOCTOR', 'RECEPTIONIST', 'ADMIN')")
     @PostMapping("/availability")
     public ResponseEntity<AvailabilityRuleResponse> create(@PathVariable String doctorId,
             @Valid @RequestBody AvailabilityRuleRequest request, @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.status(HttpStatus.CREATED).body(schedules.create(uuid(doctorId, "doctorId"), request, user));
     }
 
+    @PreAuthorize("hasAnyRole('DOCTOR', 'RECEPTIONIST', 'ADMIN')")
     @PutMapping("/availability/{availabilityId}")
     public AvailabilityRuleResponse update(@PathVariable String doctorId, @PathVariable String availabilityId,
             @Valid @RequestBody AvailabilityRuleRequest request, @AuthenticationPrincipal AuthenticatedUser user) {
         return schedules.update(uuid(doctorId, "doctorId"), uuid(availabilityId, "availabilityId"), request, user);
     }
 
+    @PreAuthorize("hasAnyRole('DOCTOR', 'RECEPTIONIST', 'ADMIN')")
     @DeleteMapping("/availability/{availabilityId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String doctorId, @PathVariable String availabilityId,

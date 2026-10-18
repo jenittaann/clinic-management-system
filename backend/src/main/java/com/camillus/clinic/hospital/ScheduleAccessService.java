@@ -28,6 +28,8 @@ public class ScheduleAccessService {
         if (user.role() == UserAccount.Role.ADMIN) return;
         if (user.role() == UserAccount.Role.DOCTOR) {
             if (doctor.getUser() != null && doctor.getUser().getPublicId().equalsIgnoreCase(user.publicId())) return;
+            if (doctors.findByUser_PublicIdIgnoreCase(user.publicId()).isEmpty())
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile is not linked to this account");
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Doctor schedule access denied");
         }
         if (user.role() == UserAccount.Role.RECEPTIONIST &&

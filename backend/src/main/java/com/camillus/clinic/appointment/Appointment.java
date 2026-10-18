@@ -17,6 +17,7 @@ public class Appointment {
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "doctor_id", nullable = false) private Doctor doctor;
     @Column(name = "starts_at", nullable = false) private Instant startsAt;
     @Column(name = "ends_at", nullable = false) private Instant endsAt;
+    @Column(name = "reason", length = 500) private String reason;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 32) private Status status;
     @Column(name = "checked_in_at") private Instant checkedInAt;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "checked_in_by_user_id") private UserAccount checkedInBy;
@@ -25,11 +26,16 @@ public class Appointment {
     protected Appointment() {}
 
     public Appointment(Patient patient, Doctor doctor, Instant startsAt, Instant endsAt, Status status) {
+        this(patient, doctor, startsAt, endsAt, status, null);
+    }
+
+    public Appointment(Patient patient, Doctor doctor, Instant startsAt, Instant endsAt, Status status, String reason) {
         this.patient = Objects.requireNonNull(patient);
         this.doctor = Objects.requireNonNull(doctor);
         this.startsAt = Objects.requireNonNull(startsAt);
         this.endsAt = Objects.requireNonNull(endsAt);
         this.status = Objects.requireNonNull(status);
+        this.reason = reason;
     }
 
     public Long getId() { return id; }
@@ -38,6 +44,7 @@ public class Appointment {
     public Doctor getDoctor() { return doctor; }
     public Instant getStartsAt() { return startsAt; }
     public Instant getEndsAt() { return endsAt; }
+    public String getReason() { return reason; }
     public Status getStatus() { return status; }
     public Instant getCheckedInAt() { return checkedInAt; }
     public UserAccount getCheckedInBy() { return checkedInBy; }

@@ -256,12 +256,7 @@ class AppointmentLifecycleIntegrationTest {
     }
 
     private MockHttpSession login(UserAccount account) throws Exception {
-        Csrf token = csrf();
-        MvcResult result = mvc.perform(post("/api/auth/login").cookie(token.cookie()).header("X-XSRF-TOKEN", token.token())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + account.getEmail() + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk()).andReturn();
-        return (MockHttpSession) result.getRequest().getSession(false);
+        return com.camillus.clinic.TestSessions.forAccount(account);
     }
 
     private Csrf csrf(MockHttpSession session) throws Exception {

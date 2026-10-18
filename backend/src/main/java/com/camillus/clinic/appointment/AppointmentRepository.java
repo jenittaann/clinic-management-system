@@ -41,6 +41,16 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @EntityGraph(attributePaths = {"patient", "patient.user", "doctor", "doctor.department", "doctor.department.hospital", "doctor.user"})
     List<Appointment> findAllByPatient_User_PublicIdIgnoreCaseOrderByStartsAtAsc(String userPublicId);
 
+    @EntityGraph(attributePaths = {"doctor", "doctor.department", "doctor.department.hospital"})
+    List<Appointment> findAllByDoctor_PublicIdIgnoreCaseAndStartsAtGreaterThanEqualAndStartsAtLessThanOrderByStartsAtAsc(
+            String doctorPublicId, Instant dayStart, Instant dayEnd);
+
+    @Query("select new com.camillus.clinic.appointment.AppointmentTimeWindow(a.startsAt, a.endsAt) from Appointment a " +
+            "where a.doctor.id = :doctorId and a.status in :statuses and a.startsAt < :rangeEnd and a.endsAt > :rangeStart")
+    List<AppointmentTimeWindow> findActiveAppointmentWindows(@Param("doctorId") Long doctorId,
+            @Param("statuses") Collection<Appointment.Status> statuses,
+            @Param("rangeStart") Instant rangeStart, @Param("rangeEnd") Instant rangeEnd);
+
     @EntityGraph(attributePaths = {"patient", "patient.user", "doctor", "doctor.department", "doctor.department.hospital", "doctor.user"})
     Optional<Appointment> findByPublicIdIgnoreCase(String publicId);
 

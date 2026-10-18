@@ -57,13 +57,16 @@ class AppointmentApiIntegrationTest {
         UserAccount patientUser = account(UserAccount.Role.PATIENT);
         patients.save(new Patient(patientUser, null, null));
         Doctor doctor = doctor("Cardiology", 30, 9, 12);
+        UserAccount doctorUser = account(UserAccount.Role.DOCTOR);
+        doctor.assignUser(doctorUser);
+        doctors.saveAndFlush(doctor);
         MockHttpSession session = login(patientUser);
         LocalDateTime start = futureWeekday(doctorDay(doctor), 9, 0);
         Csrf token = csrf(session);
 
         mvc.perform(post("/api/appointments").session(session).cookie(token.cookie())
                         .header("X-XSRF-TOKEN", token.token())
-                        .contentType(MediaType.APPLICATION_JSON).content(bookingJson(doctor, start)))
+                        .contentType(MediaType.APPLICATION_JSON).content(bookingJson(doctor, start, "Annual checkup")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.appointmentId").exists())
                 .andExpect(jsonPath("$.doctorId").value(doctor.getPublicId()))
@@ -74,6 +77,22 @@ class AppointmentApiIntegrationTest {
                 .andExpect(jsonPath("$.patientId").doesNotExist())
                 .andExpect(jsonPath("$.passwordHash").doesNotExist());
         assertEquals(1, appointments.count());
+        assertEquals("Annual checkup", appointments.findAll().get(0).getReason());
+        mvc.perform(get("/api/appointments/me").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].appointmentId").exists())
+                .andExpect(jsonPath("$[0].doctorId").value(doctor.getPublicId()));
+        mvc.perform(get("/api/doctors/{doctorId}/queue/appointments?serviceDate={serviceDate}",
+                        doctor.getPublicId(), start.toLocalDate())
+                        .session(login(doctorUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].appointmentId").exists())
+                .andExpect(jsonPath("$[0].doctorId").value(doctor.getPublicId()));
+        mvc.perform(get("/api/doctors/{doctorId}/availability", doctor.getPublicId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availableSlots.length()").value(5))
+                .andExpect(jsonPath("$.availableSlots[0].date").value(start.toLocalDate().toString()))
+                .andExpect(jsonPath("$.availableSlots[0].startTime").value("09:30:00"));
     }
 
     @Test
@@ -244,7 +263,12 @@ class AppointmentApiIntegrationTest {
     }
 
     private String bookingJson(Doctor doctor, LocalDateTime start) {
-        return "{\"doctorId\":\"" + doctor.getPublicId() + "\",\"startsAt\":\"" + start + "\",\"patientId\":999,\"role\":\"ADMIN\"}";
+        return bookingJson(doctor, start, null);
+    }
+
+    private String bookingJson(Doctor doctor, LocalDateTime start, String reason) {
+        String reasonProperty = reason == null ? "" : ",\"reason\":\"" + reason + "\"";
+        return "{\"doctorId\":\"" + doctor.getPublicId() + "\",\"startsAt\":\"" + start + "\"" + reasonProperty + ",\"patientId\":999,\"role\":\"ADMIN\"}";
     }
 
     private Doctor doctor(String departmentName, Integer duration, int startHour, int endHour) {
@@ -276,12 +300,7 @@ class AppointmentApiIntegrationTest {
     }
 
     private MockHttpSession login(UserAccount account) throws Exception {
-        Csrf token = csrf();
-        MvcResult result = mvc.perform(post("/api/auth/login").cookie(token.cookie()).header("X-XSRF-TOKEN", token.token())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + account.getEmail() + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk()).andReturn();
-        return (MockHttpSession) result.getRequest().getSession(false);
+        return com.camillus.clinic.TestSessions.forAccount(account);
     }
 
     private Csrf csrf() throws Exception { return csrf(null); }

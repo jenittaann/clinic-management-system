@@ -59,6 +59,15 @@ public class PatientController {
         return patients.listPatients(currentUser, page, size);
     }
 
+    @GetMapping("/for-doctor")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public java.util.List<PatientResponse> listPatientsForDoctor(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return patients.listPatientsForDoctor(currentUser, page, size);
+    }
+
     @GetMapping("/{patientId}")
     @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN')")
     public PatientResponse getPatient(@PathVariable String patientId,

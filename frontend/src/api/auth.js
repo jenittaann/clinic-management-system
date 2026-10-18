@@ -37,6 +37,26 @@ export function login(email, password) {
     return stateChangingRequest("/api/auth/login", { email, password })
 }
 
+export function emailSignIn({ email, role, hospitalId }) {
+    return stateChangingRequest("/api/auth/email-sign-in", { email, role, hospitalId })
+}
+
+export function registerPatientAndSignIn({ email, hospitalId }) {
+    return stateChangingRequest("/api/auth/patient-register", { email, hospitalId })
+}
+
+export function registerReceptionistAndSignIn({ email, hospitalId }) {
+    return stateChangingRequest("/api/auth/receptionist-register", { email, hospitalId })
+}
+
+export function requestPasswordlessLink({ email, role, hospitalId, registration = false }) {
+    return stateChangingRequest("/api/auth/passwordless/request", { email, role, hospitalId, registration })
+}
+
+export function verifyPasswordlessLink(token) {
+    return stateChangingRequest("/api/auth/passwordless/verify", { token })
+}
+
 export async function getCurrentSession() {
     const response = await fetch("/api/auth/me", { credentials: "include" })
     if (response.status === 401) return null

@@ -12,3 +12,19 @@ export async function fetchHospitals() {
 
     return hospitals
 }
+
+export async function fetchDepartments(hospitalId) {
+    const response = await fetch(`/api/hospitals/${encodeURIComponent(hospitalId)}/departments`)
+
+    if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        throw new Error(body?.error || `Department request failed (${response.status})`)
+    }
+
+    const departments = await response.json()
+    if (!Array.isArray(departments)) {
+        throw new Error("Department API returned an unexpected response")
+    }
+
+    return departments
+}

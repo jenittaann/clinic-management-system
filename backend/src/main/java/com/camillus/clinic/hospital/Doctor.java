@@ -11,7 +11,7 @@ public class Doctor {
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "department_id", nullable = false) private Department department;
     @OneToOne(fetch = FetchType.LAZY) @JoinColumn(name = "user_id", unique = true) private UserAccount user;
     @Column(nullable = false, length = 200) private String name;
-    private String specialization;
+    @Column(length = 160) private String specialization;
     @Column(name = "experience_years") private Integer experienceYears;
     @Column(name = "appointment_duration_minutes") private Integer appointmentDurationMinutes = 30;
     protected Doctor() {}
@@ -33,6 +33,11 @@ public class Doctor {
     public Integer getAppointmentDurationMinutes() { return appointmentDurationMinutes; }
 
     public void assignUser(UserAccount user) { this.user = user; }
+    public void updateProfile(String name, String specialization, Integer experienceYears) {
+        this.name = name;
+        this.specialization = specialization;
+        this.experienceYears = experienceYears;
+    }
     public void setAppointmentDurationMinutes(Integer appointmentDurationMinutes) {
         this.appointmentDurationMinutes = appointmentDurationMinutes;
     }

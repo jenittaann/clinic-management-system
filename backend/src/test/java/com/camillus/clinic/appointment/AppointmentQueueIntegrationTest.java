@@ -237,12 +237,7 @@ class AppointmentQueueIntegrationTest {
     }
 
     private MockHttpSession login(UserAccount account) throws Exception {
-        Csrf token = csrf(null);
-        MvcResult result = mvc.perform(post("/api/auth/login").cookie(token.cookie()).header("X-XSRF-TOKEN", token.value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + account.getEmail() + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk()).andReturn();
-        return (MockHttpSession) result.getRequest().getSession(false);
+        return com.camillus.clinic.TestSessions.forAccount(account);
     }
 
     private org.springframework.test.web.servlet.ResultActions postAction(MockHttpSession session, String path) throws Exception {

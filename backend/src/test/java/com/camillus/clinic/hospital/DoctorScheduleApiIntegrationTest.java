@@ -17,6 +17,10 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,6 +55,7 @@ class DoctorScheduleApiIntegrationTest {
                 .andExpect(jsonPath("$.doctorId").value(doctor.getPublicId()))
                 .andExpect(jsonPath("$.appointmentDurationMinutes").value(30))
                 .andExpect(jsonPath("$.recurringWeeklyRules").isEmpty())
+                .andExpect(jsonPath("$.availableSlots").isEmpty())
                 .andExpect(jsonPath("$.id").doesNotExist());
 
         MvcResult created = mvc.perform(post(path(doctor) + "/availability").session(session)
@@ -63,11 +68,23 @@ class DoctorScheduleApiIntegrationTest {
                 .andReturn();
         String ruleId = JsonPath.read(created.getResponse().getContentAsString(), "$.availabilityId");
 
+        mvc.perform(get(path(doctor) + "/availability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recurringWeeklyRules.length()").value(1))
+                .andExpect(jsonPath("$.recurringWeeklyRules[0].availabilityId").value(ruleId))
+                .andExpect(jsonPath("$.recurringWeeklyRules[0].dayOfWeek").value(1))
+                .andExpect(jsonPath("$.recurringWeeklyRules[0].startTime").value("09:00:00"));
+
         mvc.perform(put(path(doctor) + "/availability/" + ruleId).session(session)
                         .cookie(csrf.cookie()).header("X-XSRF-TOKEN", csrf.token())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"dayOfWeek\":2,\"startTime\":\"10:00:00\",\"endTime\":\"13:00:00\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.dayOfWeek").value(2));
+
+        mvc.perform(get(path(doctor) + "/availability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recurringWeeklyRules[0].dayOfWeek").value(2))
+                .andExpect(jsonPath("$.recurringWeeklyRules[0].startTime").value("10:00:00"));
 
         mvc.perform(delete(path(doctor) + "/availability/" + ruleId).session(session)
                         .cookie(csrf.cookie()).header("X-XSRF-TOKEN", csrf.token()))
@@ -76,15 +93,16 @@ class DoctorScheduleApiIntegrationTest {
     }
 
     @Test
-    void doctorsCannotManageOtherOrUnlinkedProfiles() throws Exception {
+    void publicCanReadSchedulesButDoctorsCannotManageOtherOrUnlinkedProfiles() throws Exception {
         UserAccount firstUser = account(UserAccount.Role.DOCTOR);
         UserAccount secondUser = account(UserAccount.Role.DOCTOR);
+        UserAccount unlinkedUser = account(UserAccount.Role.DOCTOR);
         Doctor first = doctor(firstUser, "First doctor");
         Doctor second = doctor(secondUser, "Second doctor");
         MockHttpSession session = login(firstUser);
         Csrf csrf = csrf();
 
-        mvc.perform(get(path(second) + "/availability").session(session)).andExpect(status().isForbidden());
+        mvc.perform(get(path(second) + "/availability")).andExpect(status().isOk());
         mvc.perform(post(path(second) + "/availability").session(session)
                         .cookie(csrf.cookie()).header("X-XSRF-TOKEN", csrf.token())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -92,8 +110,48 @@ class DoctorScheduleApiIntegrationTest {
                 .andExpect(status().isForbidden());
 
         Doctor unlinked = doctor(null, "Unlinked doctor");
-        mvc.perform(get(path(unlinked) + "/availability").session(session)).andExpect(status().isForbidden());
+        mvc.perform(get(path(unlinked) + "/availability")).andExpect(status().isOk());
+        Csrf unlinkedCsrf = csrf();
+        mvc.perform(post(path(unlinked) + "/availability").session(login(unlinkedUser))
+                        .cookie(unlinkedCsrf.cookie()).header("X-XSRF-TOKEN", unlinkedCsrf.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dayOfWeek\":1,\"startTime\":\"09:00\",\"endTime\":\"10:00\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Doctor profile is not linked to this account"));
+        mvc.perform(get("/api/doctors/me").session(login(unlinkedUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Doctor profile is not linked to this account"));
         assertEquals(0, slots.count());
+    }
+
+    @Test
+    void publicScheduleListsOnlyTheSelectedDoctorsOpenSlots() throws Exception {
+        LocalDate nextDay = Instant.now().atZone(ZoneId.of("Asia/Kolkata")).toLocalDate().plusDays(1);
+        int weekday = nextDay.getDayOfWeek().getValue();
+        Doctor selectedDoctor = doctor(null, "Selected schedule doctor");
+        Doctor otherDoctor = doctor(null, "Other schedule doctor");
+        slots.save(new AvailabilitySlot(selectedDoctor, weekday,
+                LocalTime.of(9, 0), LocalTime.of(10, 0)));
+        slots.save(new AvailabilitySlot(otherDoctor, weekday,
+                LocalTime.of(14, 0), LocalTime.of(15, 0)));
+
+        mvc.perform(get(path(selectedDoctor) + "/availability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availableSlots.length()").value(2))
+                .andExpect(jsonPath("$.availableSlots[0].date").value(nextDay.toString()))
+                .andExpect(jsonPath("$.availableSlots[0].startTime").value("09:00:00"))
+                .andExpect(jsonPath("$.availableSlots[1].startTime").value("09:30:00"))
+                .andExpect(jsonPath("$.availableSlots[0].appointmentId").doesNotExist());
+
+        mvc.perform(get(path(selectedDoctor) + "/availability?date={date}", nextDay))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availableSlots.length()").value(2))
+                .andExpect(jsonPath("$.availableSlots[0].date").value(nextDay.toString()))
+                .andExpect(jsonPath("$.availableSlots[0].startTime").value("09:00:00"));
+
+        mvc.perform(get(path(selectedDoctor) + "/availability?date={date}", nextDay.plusDays(1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availableSlots").isEmpty());
     }
 
     @Test
@@ -118,7 +176,7 @@ class DoctorScheduleApiIntegrationTest {
 
         MockHttpSession receptionistSession = login(receptionist);
         mvc.perform(get(path(assignedDoctor) + "/availability").session(receptionistSession)).andExpect(status().isOk());
-        mvc.perform(get(path(otherDoctor) + "/availability").session(receptionistSession)).andExpect(status().isForbidden());
+        mvc.perform(get(path(otherDoctor) + "/availability")).andExpect(status().isOk());
 
         mvc.perform(put(path(assignedDoctor) + "/appointment-duration").session(adminSession)
                         .cookie(adminCsrf.cookie()).header("X-XSRF-TOKEN", adminCsrf.token())
@@ -130,7 +188,7 @@ class DoctorScheduleApiIntegrationTest {
     void validatesRulesAndDurationAndRequiresCsrf() throws Exception {
         UserAccount doctorUser = account(UserAccount.Role.DOCTOR);
         Doctor doctor = doctor(doctorUser, "Validation doctor");
-        mvc.perform(get(path(doctor) + "/availability")).andExpect(status().isUnauthorized());
+        mvc.perform(get(path(doctor) + "/availability")).andExpect(status().isOk());
         MockHttpSession session = login(doctorUser);
 
         mvc.perform(post(path(doctor) + "/availability").session(session)
@@ -191,12 +249,7 @@ class DoctorScheduleApiIntegrationTest {
     }
 
     private MockHttpSession login(UserAccount account) throws Exception {
-        Csrf token = csrf();
-        MvcResult result = mvc.perform(post("/api/auth/login").cookie(token.cookie()).header("X-XSRF-TOKEN", token.token())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + account.getEmail() + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk()).andReturn();
-        return (MockHttpSession) result.getRequest().getSession(false);
+        return com.camillus.clinic.TestSessions.forAccount(account);
     }
 
     private Csrf csrf() throws Exception {

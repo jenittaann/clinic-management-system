@@ -34,6 +34,14 @@ public class DoctorQueueController {
         return appointments.getDoctorQueue(doctorId, serviceDate, currentUser);
     }
 
+    @GetMapping("/appointments")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'RECEPTIONIST', 'ADMIN')")
+    public List<AppointmentResponse> getAppointments(@PathVariable String doctorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate serviceDate,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        return appointments.getDoctorAppointments(doctorId, serviceDate, currentUser);
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiErrorResponse> handleRequestError(ResponseStatusException exception) {
         String message = exception.getReason() == null ? "Request failed" : exception.getReason();

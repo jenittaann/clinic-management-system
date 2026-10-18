@@ -186,6 +186,26 @@ class PatientApiIntegrationTest {
     }
 
     @Test
+    void linkedDoctorCanListPatientsWithAppointmentsWithoutInvalidSortPath() throws Exception {
+        UserAccount patientAccount = createAccount(UserAccount.Role.PATIENT);
+        Patient patient = patients.save(new Patient(patientAccount, "555-0100", null));
+        UserAccount doctorAccount = createAccount(UserAccount.Role.DOCTOR);
+        Hospital hospital = createHospital("Doctor patient list");
+        Doctor doctor = createDoctor(hospital);
+        doctor.assignUser(doctorAccount);
+        doctors.saveAndFlush(doctor);
+        Instant startsAt = Instant.now().plusSeconds(3600);
+        appointments.saveAndFlush(new Appointment(patient, doctor, startsAt, startsAt.plusSeconds(1800),
+                Appointment.Status.CONFIRMED));
+
+        mvc.perform(get("/api/patients/for-doctor?page=0&size=100").session(login(doctorAccount)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].patientId").value(patientAccount.getPublicId()))
+                .andExpect(jsonPath("$[0].email").value(patientAccount.getEmail()));
+    }
+
+    @Test
     void rejectsTooLongPhoneAndFutureDateOfBirth() throws Exception {
         MockHttpSession session = login(createAccount(UserAccount.Role.PATIENT));
         Csrf csrf = fetchCsrf();
@@ -233,15 +253,7 @@ class PatientApiIntegrationTest {
     }
 
     private MockHttpSession login(UserAccount account) throws Exception {
-        Csrf csrf = fetchCsrf();
-        MvcResult result = mvc.perform(post("/api/auth/login")
-                        .cookie(csrf.cookie())
-                        .header("X-XSRF-TOKEN", csrf.token())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + account.getEmail() + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        return (MockHttpSession) result.getRequest().getSession(false);
+        return com.camillus.clinic.TestSessions.forAccount(account);
     }
 
     private Csrf fetchCsrf() throws Exception {

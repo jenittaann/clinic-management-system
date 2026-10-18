@@ -7,16 +7,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import com.camillus.clinic.hospital.DoctorRepository;
 import java.util.UUID;
 
 @Service
 public class PatientService {
     private final PatientRepository patients;
     private final UserRepository users;
+    private final DoctorRepository doctors;
 
-    public PatientService(PatientRepository patients, UserRepository users) {
+    public PatientService(PatientRepository patients, UserRepository users, DoctorRepository doctors) {
         this.patients = patients;
         this.users = users;
+        this.doctors = doctors;
     }
 
     @Transactional(readOnly = true)
@@ -53,6 +56,17 @@ public class PatientService {
         };
         return visiblePatients
                 .map(PatientResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<PatientResponse> listPatientsForDoctor(AuthenticatedUser currentUser, int page, int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be non-negative and size must be between 1 and 100");
+        }
+        var doctor = doctors.findByUser_PublicIdIgnoreCase(currentUser.publicId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor profile not found"));
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "user.email"));
+        return patients.findAllForDoctor(doctor.getPublicId(), pageable).stream().map(PatientResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
